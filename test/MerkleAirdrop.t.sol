@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import { ZkSyncChainChecker} from "lib/foundry-devops/src/ZkSyncChainChecker.sol";
+import { DeployMerkleAirdrop } from "../script/DeployMerkleAirdrop.s.sol";
 import { Test, console } from "forge-std/Test.sol";
 import { MerkleAirdrop } from "../src/MerkleAirdrop.sol";
 import { BagelToken } from "../src/BagelToken.sol";
 import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract MerkleAirdropTest is Test {
+contract MerkleAirdropTest is Test, ZkSyncChainChecker {
     MerkleAirdrop public airdrop;
     BagelToken public token;
 
     bytes32 public ROOT = 0xa4d8c8776abd94bb36f381cff5af341303a00299fe70e1c3ba365f7004c4d0b2;
     uint256 public AMOUNT_TO_CLAIM = 2500 * 1e18; //Example claim amount for the test user
-    uint256 public AMOUNT_TO_SEND; // Total tokens to fund the airdrop contract
+    uint256 public AMOUNT_TO_SEND = AMOUNT_TO_CLAIM * 4; // Total tokens to fund the airdrop contract
 
     //User-specific data
     address user;
@@ -26,34 +28,21 @@ contract MerkleAirdropTest is Test {
     bytes32[] public PROOF = [proofOne, proofTwo];
 
     function setUp() public {
-        // 1. Deploy the ERC20 Token 
-        token = new BagelToken();
-
-        // 2. Generate a Deterministic Test User
-        // `makeAddrAndKey` creates a predictable address and private key.
-        // This is crucial because we need to know the user's address *before*
-        // generating the Merkle tree that includes them.
+        if (!isZkSyncChain()) { // This check is from ZkSyncChainChecker
+            // Deploy with the script
+            DeployMerkleAirdrop deployer = new DeployMerkleAirdrop();
+            (airdrop, token) = deployer.deployMerkleAirdrop();
+        } 
+        else {
+            // Original manual deployment for ZKsync environments (or other specific cases)
+            token = new BagelToken();
+            // Ensure 'ROOT' here is consistent with s_merkleRoot in the script
+            airdrop = new MerkleAirdrop(ROOT, IERC20(address(token)));
+            // Ensure 'AMOUNT_TO_SEND' here is consistent with s_amountToTransfer in the script
+            token.mint(address(this), AMOUNT_TO_SEND);
+            token.transfer(address(airdrop), AMOUNT_TO_SEND);
+        }
         (user, userPrivKey) = makeAddrAndKey("testUser");
-        console.log(user);
-
-        // 3. Deploy the MerkleAirdrop contract
-        // Pass the Merkle ROOT and the address of the token contract
-        airdrop = new MerkleAirdrop(ROOT, IERC20(address(token)));
-
-        // 4. Fund the Airdrop contract (Critical Step!)
-        // The airdrop contract needs tokens to distribute.
-        // Let's assume our test airdrop is for 4 users, each claiming AMOUNT_TO_CLAIM,
-        AMOUNT_TO_SEND = AMOUNT_TO_CLAIM * 4;
-
-        // The test contract itself is the owner of the BagelToken by default upon deployment
-        address owner = address(this);
-
-        // Mint tokens to the owner (the test contract).
-        token.mint(owner, AMOUNT_TO_SEND);
-
-        // Transfer the minted tokens to the airdrop contract.
-        // Note the explicit cast of `airdrop` (contract instance) to `address`. 
-        token.transfer(address(airdrop), AMOUNT_TO_SEND);
     }
 
     function testUsersCanClaim() public {
