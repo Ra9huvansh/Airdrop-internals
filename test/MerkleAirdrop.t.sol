@@ -20,6 +20,8 @@ contract MerkleAirdropTest is Test, ZkSyncChainChecker {
     address user;
     uint256 userPrivKey; //Private key for the test user
 
+    address public gasPayer; // The new address for the gas payer
+
     // Merkle Proof for the test user
     // The structure (e.g., bytes[2]) depends on your Merkle tree's depth
     // These specific values will be populated from your Merkle tree ouput
@@ -42,28 +44,33 @@ contract MerkleAirdropTest is Test, ZkSyncChainChecker {
             token.mint(address(this), AMOUNT_TO_SEND);
             token.transfer(address(airdrop), AMOUNT_TO_SEND);
         }
-        (user, userPrivKey) = makeAddrAndKey("testUser");
+        (user, userPrivKey) = makeAddrAndKey("testUser"); // Create user with a private key
+        gasPayer = makeAddr("gasPayer"); // Create gasPayer address
     }
 
     function testUsersCanClaim() public {
-        // 1. Get the user's starting token balance
         uint256 startingBalance = token.balanceOf(user);
-        // console.log(startingBalance);
 
-        // 2. Simulate the claim transaction from the user's address
-        // `vm.prank(address)` sets `address` for the *next* external call only
-        vm.prank(user);
+        // 1. Get the message digest that the user needs to sign
+        // This calls the getMessageDigest function from the MerkleAirdrop contract
+        bytes32 digest = airdrop.getMessageDigest(user, AMOUNT_TO_CLAIM);
 
-        // 3. Call the claim function on the airdrop contract
-        airdrop.claim(user, AMOUNT_TO_CLAIM, PROOF);
+        // 2. User signs the digest using their private key
+        // vm.sign is a Foundry cheatcode
+        uint8 v;
+        bytes32 r;
+        bytes32 s;
+        // vm.prank(user); Remove the unnecessary vm.prank(user); line preceding vm.sign(). 
+        // The user's role here is to provide a signature, not to make an on-chain call themselves.
+        // The gasPayer is the one making the on-chain call.
+        (v, r, s) = vm.sign(userPrivKey, digest);
 
-        // 4. Get the user's ending token balance
+        // 3. The gasPayer calls the claim function with the user's signature 
+        vm.prank(gasPayer); // Set the next msg.sender to be gasPayer
+        airdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, r, s);
+
         uint256 endingBalance = token.balanceOf(user);
-
-        // For debugging, you can log the ending balance
-        console.log("User's Ending Balance: ", endingBalance);
-
-        // 5. Assert that the balance increased by the expected claim amount
-        assertEq(endingBalance - startingBalance, AMOUNT_TO_CLAIM, "User did not receive the correct amount of tokens");
+        console.log("Ending Balance: ", endingBalance);
+        assertEq(endingBalance, startingBalance + AMOUNT_TO_CLAIM);
     }
 }
