@@ -17,7 +17,7 @@ contract GenerateInput is Script {
 
         address[] memory whitelist = new address[](4);
         //Example addresses
-        whitelist[0] = 0xF7DFAA7B4230fdc795e8C6430834Cf309aF893bA; // test address updated
+        whitelist[0] = 0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266; // test address updated
         whitelist[1] = 0xAb5801a7D398351b8bE11C439e05C5B3259aeC9B;
         whitelist[2] = 0x1Db3439a222C519ab44bb1144fC28167b4Fa6EE6;
         whitelist[3] = 0x0e466e7519A469f20168796a0807b758a2339791;
