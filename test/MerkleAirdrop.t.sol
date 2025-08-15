@@ -48,7 +48,7 @@ contract MerkleAirdropTest is Test, ZkSyncChainChecker {
     function testUsersCanClaim() public {
         // 1. Get the user's starting token balance
         uint256 startingBalance = token.balanceOf(user);
-        console.log(startingBalance);
+        // console.log(startingBalance);
 
         // 2. Simulate the claim transaction from the user's address
         // `vm.prank(address)` sets `address` for the *next* external call only
