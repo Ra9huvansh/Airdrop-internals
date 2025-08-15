@@ -64,7 +64,7 @@ contract MerkleAirdrop is EIP712{
         // Attempt to recover the signer address from the digest and signature components
         // ECDSA.tryRecover is preferred as it handles signature malleability and 
         // returns address(0) on failure instead of reverting.
-        bytes memory signature = abi.encode(v, r, s);
+        bytes memory signature = abi.encodePacked(r, s, v);
         (address actualSigner,,) = ECDSA.tryRecover(digest, signature);
 
         // Check two things:
