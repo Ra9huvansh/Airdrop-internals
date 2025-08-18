@@ -18,7 +18,7 @@ contract ClaimAirdrop is Script {
     bytes32 PROOF_TWO = 0x8c1fd7b608678f6dfced176fa3e3086954e8aa495613efcd312768d41338ceab;
     bytes32[] private proof = [PROOF_ONE, PROOF_TWO]; // Assuming a proof length of 2
 
-    bytes private SIGNATURE = hex"3e2a646cc154217a8dbaf38064102a1199264ea7883f13d754c8b8ea7d502421576aadfc3d9c3b2aaa44b61f53a35a1f57e32bb4f2628789cbdd95a96a60fd5e1b";
+    bytes private SIGNATURE = hex"9c393eeef78958d5e0ec5d82c9292d9cc21784bd9ca4ee88198dccac743788661530bf98a496bce8debe3ff0ad559e50ce1fad6320514f24e14127563034d78c1c";
 
     function run() external {
         address mostRecentlyDeployed = DevOpsTools.get_most_recent_deployment("MerkleAirdrop", block.chainid);
