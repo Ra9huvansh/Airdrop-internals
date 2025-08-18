@@ -39,14 +39,34 @@ contract ClaimAirdrop is Script {
 
     }
 
+    /**
+     * @notice Splits a 65-byte concatenated signauture (r,s,v) into its components.
+     * @param sig The concatenated signature as bytes.
+     * @return v The recovery identifier (1 byte).
+     * @return r The r value of the signature (32 bytes).
+     * @return s The s value of the signature (32 bytes).
+     */
+
     function splitSignature(bytes memory sig) public pure returns (uint8 v, bytes32 r, bytes32 s) {
+        // Standard ECDSA signatures are 65 bytes long:
+        // r (32 bytes) + s (32 bytes) + v (1 byte)
         if (sig.length != 65) {
             revert ClaimAirdrop__InvalidSignatureLength();
         }
+        // Accessing bytes data in assembly requires careful memory management.
+        // `sig` in assembly points to the length of the byte array.
+        // The actual data starts 32 bytes after this pointer.
         assembly {
+            // Load the first 32 bytes (r)
             r := mload(add(sig, 32))
+            // Load the next 32 bytes (s)
             s := mload(add(sig, 64))
+            // Load the last byte (v)
+            // v is the first byte of the 32-byte word starting at offset 96 (0x60)
             v := byte(0, mload(add(sig, 96)))
+            // if (v < 27) {
+            //     v = v + 27;
+            // }
         }
     }
 }
